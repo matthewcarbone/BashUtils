@@ -10,6 +10,7 @@
 # rm mycron
 
 
+NOW=$(date)
 CRON="* * * * *"
 MAXJOBS=0
 USER="USER_UNSET"
@@ -102,12 +103,6 @@ function remove_payload_from_crontab {
 }
 
 
-function available_jobs {
-    queued_or_running_jobs=$(squeue -u "$USER" | awk 'NR!=1' | wc -l)
-    echo $((MAXJOBS - queued_or_running_jobs))
-}
-
-
 # Takes the file list as input
 function dryrun {
     echo "DRYRUN - will attempt to submit the following $TARGET_FILE files"
@@ -116,7 +111,14 @@ function dryrun {
     done
 }
 
-function remaining_jobs {
+
+function get_available_jobs_via_SLURM {
+    queued_or_running_jobs=$(squeue -u "$USER" | awk 'NR!=1' | wc -l)
+    echo $((MAXJOBS - queued_or_running_jobs))
+}
+
+
+function get_jobs_unqueued {
     cctot=0
     cc=0
     for file in $1; do
@@ -150,17 +152,18 @@ function execute {
     fi
 
     # Get the remaining jobs
-    number_of_remaining_jobs=$(remaining_jobs file_list)
+    number_of_get_jobs_unqueued=$(get_jobs_unqueued file_list)
+    echo "jobs remaining before submission: $number_of_get_jobs_unqueued"
 
     # If no jobs remain, stop
-    if [ "$number_of_remaining_jobs" -lt 1 ]; then
-        echo "Finished"
+    if [ "$number_of_get_jobs_unqueued" -lt 1 ]; then
+        echo "!!! Finished !!!"
         remove_payload_from_crontab
         exit 0
     fi
 
     # Get the current job list
-    currently_available_jobs=$(available_jobs)
+    currently_available_jobs=$(get_available_jobs_via_SLURM)
 
     # If no jobs remain, stop
     if [ "$currently_available_jobs" -lt 1 ]; then
@@ -175,7 +178,7 @@ function execute {
         cd "$parent" || exit
 
         # Break if we're done
-        if [ "$currently_available_jobs" -le 0 ]; then
+        if [ "$currently_available_jobs" -lt 1 ]; then
             break
         fi
 
@@ -192,7 +195,7 @@ function execute {
             if [[ "$slurm_out" =~ .*"Submitted batch job".* ]]; then
                 job_id=${slurm_out##* }
                 echo "submitted job id $job_id: $parent"
-                currently_available_jobs="$(available_jobs)"
+                currently_available_jobs="$(get_available_jobs_via_SLURM)"
             else
                 echo "submit error: $slurm_out"
                 continue
@@ -210,7 +213,7 @@ function execute {
 
     done
 
-    echo "jobs remaining: $number_of_remaining_jobs"
+    
     echo
 }
 
