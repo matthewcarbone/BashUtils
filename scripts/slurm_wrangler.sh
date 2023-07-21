@@ -139,8 +139,6 @@ function get_jobs_unqueued {
 # been previously executed
 function execute {
 
-    echo "$NOW"
-
     file_list=$(find "$DIRECTORY" -name "$TARGET_FILE" -exec echo {} \;)
     
     # Dryrun does not submit anything, just prints the directories
@@ -152,11 +150,11 @@ function execute {
     fi
 
     # Get the remaining jobs
-    number_of_get_jobs_unqueued=$(get_jobs_unqueued file_list)
-    echo "jobs remaining before submission: $number_of_get_jobs_unqueued"
+    number_of_jobs_unqueued=$(get_jobs_unqueued "$file_list")
+    echo "jobs remaining before submission: $number_of_jobs_unqueued"
 
     # If no jobs remain, stop
-    if [ "$number_of_get_jobs_unqueued" -lt 1 ]; then
+    if [ "$number_of_jobs_unqueued" -lt 1 ]; then
         echo "!!! Finished !!!"
         remove_payload_from_crontab
         exit 0
