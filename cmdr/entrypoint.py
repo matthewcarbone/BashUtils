@@ -72,6 +72,7 @@ def global_parser(sys_argv):
         dest="calculations_per_staged_job",
         help="Number of calculations per staged job",
         default=36,
+        type=int,
     )
 
     tether_subparser.add_argument(
