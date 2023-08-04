@@ -1,4 +1,4 @@
-# BashUtils
+# cmdr
 
 A collection of bash scripts for making life on HPC just a bit easier. All scripts are contained in the `scripts` directory. They can be run from anywhere on your computer, but it is recommended you install them to your `PATH`.
 
