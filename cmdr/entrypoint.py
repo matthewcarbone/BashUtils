@@ -62,8 +62,9 @@ def global_parser(sys_argv):
     tether_subparser.add_argument(
         "--tether-directory",
         dest="tether_directory",
-        help="Directory to save the tether submit files in",
-        required=True,
+        help="Directory to save the tether submit files in (if not provided, "
+        "defaults to the search directory name with a _tether suffix)",
+        default=None,
     )
 
     tether_subparser.add_argument(
@@ -126,10 +127,14 @@ def entrypoint(args=sys.argv[1:]):
     elif args.runtype == "tether":
         slurm_lines = [xx.split("=") for xx in args.slurm_lines]
         slurm_lines = {key: value for (key, value) in slurm_lines}
+        if args.tether_directory is None:
+            tether_directory = f"{args.search_directory}_tether"
+        else:
+            tether_directory = args.tether_directory
         tether_constructor(
             args.search_directory,
             args.filename,
-            args.tether_directory,
+            tether_directory,
             args.calculations_per_staged_job,
             slurm_lines,
             args.post_slurm_lines,
