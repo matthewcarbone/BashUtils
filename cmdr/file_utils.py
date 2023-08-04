@@ -76,27 +76,6 @@ def run_command(cmd):
     }
 
 
-def _exhaustive_directory_search_linux_darwin(root, filename):
-    """Executes a recursive directory search using the ``find`` bash command.
-
-    Parameters
-    ----------
-    root : os.PathLike
-    filename : str
-
-    Returns
-    -------
-    list of os.PathLike
-    """
-
-    find_command = f'find {root} -name "{filename}"'
-    out = run_command(find_command)
-    if int(out["exitcode"]) != 0:
-        raise RuntimeError(f"Unknown error running `find` {out}")
-    results = out["stdout"].split()
-    return [Path(xx).parent for xx in results]
-
-
 def exhaustive_directory_search(root, filename):
     """Executes an exhaustive, recursive directory search of all downstream
     directories, finding directories which contain a file matching the provided
@@ -117,8 +96,6 @@ def exhaustive_directory_search(root, filename):
         A list of of os.PathLike directories containing the filename provided.
     """
 
-    if platform in ["linux", "linux2", "darwin"]:
-        return _exhaustive_directory_search_linux_darwin(root, filename)
     return [xx.parent for xx in Path(root).rglob(filename)]
 
 

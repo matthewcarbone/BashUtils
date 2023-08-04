@@ -10,9 +10,9 @@
 from collections import Counter
 from pathlib import Path
 
-from autojob import logger
+from cmdr import logger
 
-from autojob.file_utils import (
+from cmdr.file_utils import (
     exhaustive_directory_search,
     run_command,
     check_if_substring_match,
@@ -61,7 +61,8 @@ def check_computation_type(root, input_files=CONFIG["in"]):
 
     contained = {xx.parts[-1] for xx in list(Path(root).iterdir())}
     overlap = {
-        key: set(value).issubset(contained) for key, value in input_files.items()
+        key: set(value).issubset(contained)
+        for key, value in input_files.items()
     }
 
     # Check to see if for some reason there are multiple computations' input
@@ -175,7 +176,9 @@ def generate_report(root, filename, output_files=CONFIG["out"]):
     # was run.
     calculation_types = {dd: check_computation_type(dd) for dd in directories}
     calculation_types = {
-        key: value for key, value in calculation_types.items() if value is not None
+        key: value
+        for key, value in calculation_types.items()
+        if value is not None
     }
     cc = Counter(list(calculation_types.values()))
 

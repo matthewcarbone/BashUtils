@@ -3,12 +3,11 @@ from argparse import HelpFormatter, ArgumentDefaultsHelpFormatter
 from datetime import datetime
 from operator import attrgetter
 from pathlib import Path
+from rich.pretty import pprint
 import sys
 
-from autojob import logger
-from autojob.report import generate_report
-from autojob.tether import tether_constructor
-from autojob.file_utils import save_json, read_json
+from cmdr.tether import tether_constructor
+from cmdr.file_utils import read_json
 
 
 NOW = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -34,34 +33,9 @@ def global_parser(sys_argv):
         "changes the logging format to make it better for detecting issues.",
     )
 
-    ap.add_argument(
-        "--autojob-root",
-        dest="autojob_root",
-        default=Path.home() / Path(".autojob"),
-    )
-
     # --- Global options ---
 
     subparsers = ap.add_subparsers(help="Global options", dest="runtype")
-
-    report_subparser = subparsers.add_parser(
-        "report",
-        formatter_class=SortingHelpFormatter,
-        description="Generates a report based on a recursive search of a "
-        "directory. Different types of scientific calculations are supported, "
-        "and are tabulated in the documentation. At the simplest level, a "
-        "job is marked as successfully completed, failed or unknown.",
-    )
-
-    report_subparser.add_argument("root", help="Path to the directory to analyze.")
-
-    report_subparser.add_argument(
-        "-f",
-        "--filename",
-        dest="filename",
-        default="submit.sbatch",
-        help="Filename to search for.",
-    )
 
     tether_subparser = subparsers.add_parser(
         "tether",
@@ -70,14 +44,63 @@ def global_parser(sys_argv):
         "See the documentation for more details.",
     )
 
-    tether_subparser.add_argument("root", help="Path to the directory to tether.")
+    tether_subparser.add_argument(
+        "--filename",
+        dest="filename",
+        help="File to search for, which is an indicator that is a directory "
+        "in which you want to run a job",
+        required=True,
+    )
 
     tether_subparser.add_argument(
-        "--config",
-        dest="config",
-        default="feff",
-        help="Reference to the configuration contained in "
-        "$HOME/.autojob/tether. The .json suffix is omitted.",
+        "--search-directory",
+        dest="search_directory",
+        help="Directory to search for the file name",
+        required=True,
+    )
+
+    tether_subparser.add_argument(
+        "--tether-directory",
+        dest="tether_directory",
+        help="Directory to save the tether submit files in",
+        required=True,
+    )
+
+    tether_subparser.add_argument(
+        "-c",
+        "--calculations-per-staged-job",
+        dest="calculations_per_staged_job",
+        help="Number of calculations per staged job",
+        default=36,
+    )
+
+    tether_subparser.add_argument(
+        "-l",
+        "--exe-line",
+        dest="executable_lines",
+        action="append",
+        help="Executable line to be run in every directory found",
+        required=True,
+    )
+
+    tether_subparser.add_argument(
+        "-p",
+        "--post-slurm-line",
+        dest="post_slurm_lines",
+        action="append",
+        help="Lines which are not SLURM commands but are rune once before "
+        "other parts of the script are executed (such as export or module "
+        "loading)",
+        default=[],
+    )
+
+    tether_subparser.add_argument(
+        "-s",
+        "--slurm-line",
+        dest="slurm_lines",
+        action="append",
+        help="Slurm parameter",
+        required=True,
     )
 
     return ap.parse_args(sys_argv)
@@ -93,29 +116,23 @@ def entrypoint(args=sys.argv[1:]):
     """
 
     args = global_parser(args)
-    logger.debug(f"Command line args: {args}")
+    pprint(args)
+    print("-" * 80)
 
-    if args.runtype == "report":
-        d = generate_report(args.root, args.filename)
-        save_json(d, Path(args.root) / Path("report.json"))
-
-    elif args.runtype == "submit":
+    if args.runtype == "submit":
         pass
 
     elif args.runtype == "tether":
-        config_root = args.autojob_root / Path("tether")
-        config = read_json(config_root / Path(f"{args.config}.json"))
-        staging_name = config["staging_directory"]
-        if staging_name is None:
-            staging_name = f"tether-staged-{NOW}"
-        target_directory = Path.cwd() / Path(staging_name)
+        slurm_lines = [xx.split("=") for xx in args.slurm_lines]
+        slurm_lines = {key: value for (key, value) in slurm_lines}
         tether_constructor(
-            args.root,
-            config["filename"],
-            target_directory,
-            config["calculations_per_staged_job"],
-            config["slurm_header_lines"],
-            config["executable"],
+            args.search_directory,
+            args.filename,
+            args.tether_directory,
+            args.calculations_per_staged_job,
+            slurm_lines,
+            args.post_slurm_lines,
+            args.executable_lines,
         )
 
     else:
