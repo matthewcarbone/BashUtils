@@ -7,7 +7,7 @@ from rich.pretty import pprint
 import sys
 
 from cmdr.tether import tether_constructor
-from cmdr.file_utils import read_json
+from cmdr.file_utils import run_command
 
 
 NOW = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -36,6 +36,46 @@ def global_parser(sys_argv):
     # --- Global options ---
 
     subparsers = ap.add_subparsers(help="Global options", dest="runtype")
+
+    # WRANGLE
+
+    wrangle_subparser = subparsers.add_parser(
+        "wrangle",
+        formatter_class=SortingHelpFormatter,
+        description="...",   
+    )
+
+    wrangle_subparser.add_argument(
+        "--directory",
+        dest="directory",
+        help="Directory to search for the file name",
+        required=True,
+    )
+
+    wrangle_subparser.add_argument(
+        "--user",
+        dest="user",
+        help="SLURM username",
+        required=True,
+    )
+
+    wrangle_subparser.add_argument(
+        "--maxjobs",
+        dest="maxjobs",
+        help="Max number of jobs to run concurrently",
+        default=20,
+        type=int
+    )
+
+    wrangle_subparser.add_argument(
+        "--other",
+        dest="other_args",
+        help="A string of other arguments verbatim",
+        default=None,
+        type=str,
+    )
+
+    # TETHER
 
     tether_subparser = subparsers.add_parser(
         "tether",
@@ -121,8 +161,17 @@ def entrypoint(args=sys.argv[1:]):
     pprint(args)
     print("-" * 80)
 
-    if args.runtype == "submit":
-        pass
+    if args.runtype == "wrangle":
+        script_path = Path(__file__).parent / "scripts" / "slurm_wrangler.sh"
+        s = f"{script_path} --user={args.user} --directory={args.directory} " \
+            f"--maxjobs={args.maxjobs}"
+        if args.other_args is not None:
+            s += f" {args.other_args}"
+        out = run_command(s)
+        if out["exitcode"] != 0:
+            pprint(out)
+            raise RuntimeError("Error with slurm_wrangler")
+        pprint(out["stdout"])
 
     elif args.runtype == "tether":
         slurm_lines = [xx.split("=") for xx in args.slurm_lines]

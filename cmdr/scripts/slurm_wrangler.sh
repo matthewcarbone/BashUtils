@@ -17,7 +17,7 @@ USER="USER_UNSET"
 DIRECTORY="DIRECTORY_UNSET"
 TARGET_FILE="submit.sbatch"
 MODE="SETUP"
-QUEUED=".QUEUED"
+QUEUED="QUEUED"
 
 optspec=":hc-:"
 while getopts "$optspec" optchar; do
