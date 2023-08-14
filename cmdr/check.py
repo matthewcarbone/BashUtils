@@ -1,4 +1,5 @@
 from pathlib import Path
+from tqdm import tqdm
 
 from cmdr.file_utils import exhaustive_directory_search, run_command, save_json
 
@@ -30,20 +31,18 @@ def check(
         exhaustive_directory_search(search_directory, search_filename)
     )
     dirs = [str(d) for d in dirs]
-    print(f"Found a total of {len(dirs)} corresponding to {search_filename}")
 
-    failed_no_file = [
-        str(d) for d in dirs if not (Path(d) / require_filename).exists()
-    ]
-
-    dirs = list(set(dirs) - set(failed_no_file))
-
-    grepped = [
-        run_command(f"grep '{require_text}' {Path(d) / require_filename}")["exitcode"]
-        for d in dirs
-    ]
-
-    failed_no_line = [d for d, g in zip(dirs, grepped) if int(g) == 1]
+    failed_no_file = []
+    failed_no_line = []
+    for d in tqdm(dirs):
+        if not (Path(d) / require_filename).exists():
+            failed_no_file.append(d)
+            continue
+        cmd = f"grep '{require_text}' {Path(d) / require_filename}"
+        cmd = run_command(cmd)
+        exitcode = cmd["exitcode"]
+        if int(exitcode) == 1:
+            failed_no_line.append(d)
 
     if len(failed_no_file) > 0 or len(failed_no_line) > 0:
         print(f"Failed (no file): {len(failed_no_file)}")
