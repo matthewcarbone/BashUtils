@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 from subprocess import Popen, PIPE
 from time import time
-from sys import platform
 
 
 def save_json(d, path, indent=4, sort_keys=False):
@@ -76,11 +75,11 @@ def run_command(cmd):
     }
 
 
-def exhaustive_directory_search(root, filename):
+def exhaustive_directory_search(root, filename, return_filename=False):
     """Executes an exhaustive, recursive directory search of all downstream
     directories, finding directories which contain a file matching the provided
     file name query string.
-
+    
     Parameters
     ----------
     root : os.PathLike
@@ -89,13 +88,18 @@ def exhaustive_directory_search(root, filename):
     filename : str
         The exact name of the file which identifies a directory as one of
         interest.
-
+    return_filename : bool, optional
+        If False, returns the directory in which the file is found. Else,
+        returns the filenames themselves.
+    
     Returns
     -------
     list
         A list of of os.PathLike directories containing the filename provided.
     """
 
+    if return_filename:
+        return [xx for xx in Path(root).rglob(filename)]
     return [xx.parent for xx in Path(root).rglob(filename)]
 
 

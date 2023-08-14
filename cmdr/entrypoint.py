@@ -6,6 +6,7 @@ from pathlib import Path
 from rich.pretty import pprint
 import sys
 
+from cmdr.check import check
 from cmdr.tether import tether_constructor
 from cmdr.file_utils import run_command
 
@@ -93,7 +94,7 @@ def global_parser(sys_argv):
     )
 
     tether_subparser.add_argument(
-        "--search-directory",
+        "--directory",
         dest="search_directory",
         help="Directory to search for the file name",
         required=True,
@@ -145,6 +146,44 @@ def global_parser(sys_argv):
         required=True,
     )
 
+    # CHECK
+
+    check_subparser = subparsers.add_parser(
+        "check",
+        formatter_class=SortingHelpFormatter,
+        description="Allows for quickly testing the status of output files."
+        " Can be used to figure out quickly if jobs have completed "
+        "successfully or not",
+    )
+
+    check_subparser.add_argument(
+        "--filename",
+        dest="filename",
+        help="File to search for",
+        required=True,
+    )
+
+    check_subparser.add_argument(
+        "--directory",
+        dest="search_directory",
+        help="Directory to recursively search for the file name",
+        required=True,
+    )
+
+    check_subparser.add_argument(
+        "--require",
+        dest="require_text",
+        help="Requires that this text be found in the specified file",
+        required=True,
+    )
+
+    check_subparser.add_argument(
+        "--report-path",
+        dest="report_path",
+        help="Path to the report text file that will be saved",
+        default="report.txt"
+    )
+
     return ap.parse_args(sys_argv)
 
 
@@ -189,6 +228,9 @@ def entrypoint(args=sys.argv[1:]):
             args.post_slurm_lines,
             args.executable_lines,
         )
+
+    elif args.runtype == "check":
+        check(args.search_directory, args.filename, args.require_text, args.report_path)
 
     else:
         raise RuntimeError(f"Unknown runtime type {args.runtype}")
