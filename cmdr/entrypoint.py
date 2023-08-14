@@ -157,13 +157,6 @@ def global_parser(sys_argv):
     )
 
     check_subparser.add_argument(
-        "--filename",
-        dest="filename",
-        help="File to search for",
-        required=True,
-    )
-
-    check_subparser.add_argument(
         "--directory",
         dest="search_directory",
         help="Directory to recursively search for the file name",
@@ -171,17 +164,31 @@ def global_parser(sys_argv):
     )
 
     check_subparser.add_argument(
-        "--require",
+        "--filename",
+        dest="search_filename",
+        help="File to search for in order to collect directories",
+        required=True,
+    )
+
+    check_subparser.add_argument(
+        "--require-file",
+        dest="require_filename",
+        help="Requires that this file exists",
+        required=True,
+    )
+
+    check_subparser.add_argument(
+        "--require-text",
         dest="require_text",
-        help="Requires that this text be found in the specified file",
+        help="Requires that this text be found in the specified required file",
         required=True,
     )
 
     check_subparser.add_argument(
         "--report-path",
         dest="report_path",
-        help="Path to the report text file that will be saved",
-        default="report.txt"
+        help="Path to the report json file that will be saved",
+        default="report.json"
     )
 
     return ap.parse_args(sys_argv)
@@ -230,7 +237,13 @@ def entrypoint(args=sys.argv[1:]):
         )
 
     elif args.runtype == "check":
-        check(args.search_directory, args.filename, args.require_text, args.report_path)
+        check(
+            args.search_directory,
+            args.search_filename,
+            args.require_filename,
+            args.require_text,
+            args.report_path,
+        )
 
     else:
         raise RuntimeError(f"Unknown runtime type {args.runtype}")
